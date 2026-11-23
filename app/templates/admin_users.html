@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}User administration | Chitfunds Parser{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">Administration</p><h1>Users</h1></div>
+  <a class="button secondary" href="/dashboard">Back</a>
+</section>
+
+<section class="table-section">
+  {% if users %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Approved</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for target in users %}
+      <tr>
+        <td>{{ target.display_name }}</td>
+        <td>{{ target.email }}</td>
+        <td>{{ target.role }}</td>
+        <td>{{ "Yes" if target.is_approved else "Pending" }}</td>
+        <td>{{ "Active" if target.is_active else "Disabled" }}</td>
+        <td class="actions">
+          {% if not target.is_approved %}
+          <form method="post" action="/admin/users/{{ target.id }}/approve"><button class="button secondary" type="submit">Approve</button></form>
+          {% endif %}
+          {% if target.id != user.id %}
+          <form method="post" action="/admin/users/{{ target.id }}/toggle-active"><button class="button secondary" type="submit">{{ "Disable" if target.is_active else "Enable" }}</button></form>
+          <form method="post" action="/admin/users/{{ target.id }}/toggle-role"><button class="button secondary" type="submit">{{ "Make user" if target.role == "admin" else "Make admin" }}</button></form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty"><h2>No users</h2></div>{% endif %}
+</section>
+{% endblock %}

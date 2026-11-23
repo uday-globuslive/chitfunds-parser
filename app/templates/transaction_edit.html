@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Review transaction | Chitfunds Parser{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">{{ chit.name }}</p><h1>Review transaction</h1></div>
+  <a class="button secondary" href="/chits/{{ chit.id }}">Back</a>
+</section>
+
+<section class="review-grid">
+  <article class="panel">
+    {% if transaction.image_data %}
+    <img class="review-image" src="/transactions/{{ transaction.id }}/image" alt="Transaction screenshot">
+    {% else %}<div class="empty"><p>Manual transaction without an image.</p></div>{% endif %}
+  </article>
+  <article class="panel">
+    <div class="review-totals">
+      <div><span>Chit amount</span><strong>₹{{ "{:,.2f}".format(chit.chit_amount) }}</strong></div>
+      <div><span>Amount transferred</span><strong>{% if transaction.amount_transferred is not none %}₹{{ "{:,.2f}".format(transaction.amount_transferred) }}{% else %}Not extracted{% endif %}</strong></div>
+      <div><span>Total chit amount</span><strong>₹{{ "{:,.2f}".format(total_chit_amount) }}</strong></div>
+    </div>
+    <form class="form" method="post" action="/transactions/{{ transaction.id }}/edit">
+      <label>Transaction date<input type="date" name="transaction_date" value="{{ transaction.transaction_date or '' }}"></label>
+      <label>Amount transferred<input type="number" name="amount_transferred" step="0.01" min="0" value="{{ transaction.amount_transferred or '' }}"></label>
+      <label>Transaction ID<input type="text" name="transaction_id" value="{{ transaction.transaction_id or '' }}"></label>
+      <label>Status
+        <select name="status"><option value="needs_review" {% if transaction.status == "needs_review" %}selected{% endif %}>Needs review</option><option value="verified" {% if transaction.status == "verified" %}selected{% endif %}>Verified</option></select>
+      </label>
+      <label>Notes<textarea name="notes">{{ transaction.notes or '' }}</textarea></label>
+      <p class="ocr-note"><strong>OCR text</strong><br>{{ transaction.ocr_text or "No OCR text captured." }}</p>
+      <div class="form-actions"><button class="button" type="submit">Save</button></div>
+    </form>
+    <form method="post" action="/transactions/{{ transaction.id }}/delete" onsubmit="return confirm('Delete this transaction?')"><button class="button danger" type="submit">Delete</button></form>
+  </article>
+</section>
+{% endblock %}

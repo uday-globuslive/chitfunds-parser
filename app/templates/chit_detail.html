@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}{{ chit.name }} | Chitfunds Parser{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">Chit</p><h1>{{ chit.name }}</h1></div>
+  <a class="button secondary" href="/dashboard">Back</a>
+</section>
+
+<section class="summary-grid">
+  <article class="panel"><span>Chit amount</span><strong>₹{{ "{:,.2f}".format(chit.chit_amount) }}</strong></article>
+  <article class="panel"><span>Total chit amount</span><strong>₹{{ "{:,.2f}".format(total_chit_amount) }}</strong></article>
+  <article class="panel"><span>Recorded payments</span><strong>₹{{ "{:,.2f}".format(paid) }}</strong></article>
+  <article class="panel"><span>Transactions</span><strong>{{ transactions|length }}</strong></article>
+</section>
+
+<section class="panel">
+  <h2>Edit chit</h2>
+  <form class="grid-form" method="post" action="/chits/{{ chit.id }}/edit">
+    <label>Chit name<input type="text" name="name" value="{{ chit.name }}" required></label>
+    <label>Chit amount<input type="number" name="chit_amount" step="0.01" min="1" value="{{ chit.chit_amount }}" required></label>
+    <label>Start date<input type="date" name="start_date" value="{{ chit.start_date or '' }}"></label>
+    <label>Status
+      <select name="status"><option value="active" {% if chit.status == "active" %}selected{% endif %}>Active</option><option value="completed" {% if chit.status == "completed" %}selected{% endif %}>Completed</option><option value="archived" {% if chit.status == "archived" %}selected{% endif %}>Archived</option></select>
+    </label>
+    <label>Notes<input type="text" name="notes" value="{{ chit.notes or '' }}"></label>
+    <button class="button" type="submit">Save chit</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Upload screenshots</h2>
+  <form class="grid-form" method="post" action="/chits/{{ chit.id }}/upload" enctype="multipart/form-data">
+    <label class="file-label">Transaction image<input type="file" name="file" accept="image/jpeg,image/png,image/webp,image/bmp" required></label>
+    {% if other_chits %}
+    <label>Also record for
+      <select name="extra_chit_ids" multiple>
+        {% for other in other_chits %}<option value="{{ other.id }}">{{ other.name }} - ₹{{ "{:,.2f}".format(other.chit_amount) }}</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <button class="button" type="submit">Upload and OCR</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2>Add manually</h2>
+  <form class="grid-form" method="post" action="/chits/{{ chit.id }}/transactions">
+    <label>Transaction date<input type="date" name="transaction_date"></label>
+    <label>Amount<input type="number" name="amount_transferred" step="0.01" min="0"></label>
+    <label>Transaction ID<input type="text" name="transaction_id"></label>
+    <label>Status
+      <select name="status"><option value="verified">Verified</option><option value="needs_review">Needs review</option></select>
+    </label>
+    <label>Notes<input type="text" name="notes"></label>
+    <button class="button" type="submit">Save record</button>
+  </form>
+</section>
+
+<section class="table-section">
+  <div class="table-heading"><h2>Transactions</h2><a class="button secondary" href="/chits/{{ chit.id }}/export.csv">Download CSV</a></div>
+  {% if transactions %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Amount</th><th>Transaction ID</th><th>Status</th><th>Source</th><th></th></tr></thead>
+    <tbody>
+      {% for transaction in transactions %}
+      <tr>
+        <td>{{ transaction.transaction_date or "-" }}</td>
+        <td>{% if transaction.amount_transferred is not none %}₹{{ "{:,.2f}".format(transaction.amount_transferred) }}{% else %}-{% endif %}</td>
+        <td>{{ transaction.transaction_id or "-" }}</td>
+        <td><span class="status {{ transaction.status }}">{{ "Needs review" if transaction.status == "needs_review" else "Verified" }}</span></td>
+        <td>{{ transaction.source_file_name or "Manual" }}</td>
+        <td class="actions"><a href="/transactions/{{ transaction.id }}/edit">Edit</a>{% if transaction.image_data %}<a href="/transactions/{{ transaction.id }}/image">Download image</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty"><h2>No transactions</h2><p>Upload an image or add a record manually.</p></div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create account | Chitfunds Parser{% endblock %}
+{% block content %}
+<section class="auth-shell">
+  <div>
+    <p class="eyebrow">Private workspace</p>
+    <h1>Create account</h1>
+  </div>
+  {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+  <form class="form" method="post" action="/signup">
+    <label>Name<input type="text" name="display_name" autocomplete="name" required></label>
+    <label>Email<input type="email" name="email" autocomplete="email" required></label>
+    <label>Password<input type="password" name="password" minlength="8" autocomplete="new-password" required></label>
+    <button class="button" type="submit">Create account</button>
+  </form>
+  <p class="muted">Already registered? <a href="/login">Sign in</a></p>
+</section>
+{% endblock %}

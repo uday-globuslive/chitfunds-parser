@@ -1,0 +1,68 @@
+name: Build and publish Docker image
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_dispatch' || github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Hub credentials
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          test -n "$DOCKERHUB_USERNAME" || (echo "Missing GitHub secret: DOCKERHUB_USERNAME" && exit 1)
+          test -n "$DOCKERHUB_TOKEN" || (echo "Missing GitHub secret: DOCKERHUB_TOKEN" && exit 1)
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generate image tag
+        id: image_tag
+        env:
+          BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          branch=$(printf '%s' "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_.-]+/-/g; s/^[.-]+//; s/-+$//')
+          branch=${branch:-branch}
+          branch=${branch:0:120}
+          echo "tag=${branch}-${COMMIT_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and optionally push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ github.event_name == 'pull_request' && 'chitfunds-parser' || format('{0}/chitfunds-parser', secrets.DOCKERHUB_USERNAME) }}:${{ steps.image_tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test pull request image application import
+        if: github.event_name == 'pull_request'
+        run: |
+          docker run --rm --entrypoint python "chitfunds-parser:${{ steps.image_tag.outputs.tag }}" -c "from app.main import app; print(app.title)"

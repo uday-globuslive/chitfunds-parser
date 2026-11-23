@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Chitfunds Parser{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><p class="eyebrow">{{ user.display_name }}</p><h1>Your chits</h1></div>
+</section>
+
+<section class="panel">
+  <h2>Add a chit</h2>
+  <form class="grid-form" method="post" action="/chits">
+    <label>Chit name<input type="text" name="name" placeholder="Chit 2" required></label>
+    <label>Chit amount<input type="number" name="chit_amount" step="0.01" min="1" required></label>
+    <label>Start date<input type="date" name="start_date"></label>
+    <label>Notes<input type="text" name="notes" placeholder="Optional"></label>
+    <button class="button" type="submit">Add chit</button>
+  </form>
+</section>
+
+{% if chit_cards %}
+<section class="card-grid">
+  {% for card in chit_cards %}
+  {% set chit = card.chit %}
+  <article class="card">
+    <div>
+      <p class="eyebrow">{{ chit.status }}</p>
+      <h2>{{ chit.name }}</h2>
+      <p class="amount">Chit amount: ₹{{ "{:,.2f}".format(chit.chit_amount) }}</p>
+      <p class="amount">Total chit amount: ₹{{ "{:,.2f}".format(card.total_chit_amount) }}</p>
+      <p class="amount">Recorded payments: ₹{{ "{:,.2f}".format(card.paid) }}</p>
+      <p class="muted">{{ card.transaction_count }} payment{{ "s" if card.transaction_count != 1 else "" }}</p>
+    </div>
+    <a class="button secondary" href="/chits/{{ chit.id }}">Open</a>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<section class="empty"><h2>No chits yet</h2><p>Create the first one above.</p></section>
+{% endif %}
+{% endblock %}
