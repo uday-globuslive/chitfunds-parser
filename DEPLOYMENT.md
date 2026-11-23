@@ -331,14 +331,55 @@ Example image name:
 DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
 ```
 
-Pull and run the image:
+Pull request builds validate Docker build output but do not push or require Docker Hub credentials.
+
+## Run the Docker Hub Image
+
+Install and start Docker Desktop on Windows or Docker Engine on Linux. Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to the GitHub repository's Actions secrets before pushing a branch. After the workflow succeeds, find the actual image tag in the Actions run or Docker Hub. Replace `DOCKERHUB_USERNAME` and `main-abcdef1` in the commands below with your username and published tag. For a private image, run `docker login` first.
+
+Create a separate `.env.docker` file on the machine running Docker:
+
+```dotenv
+DATABASE_URL=postgresql+psycopg2://USERNAME:PASSWORD@HOST:5432/chitfunds?sslmode=require
+SESSION_SECRET=replace-with-a-long-random-secret
+DEFAULT_ADMIN_NAME=Administrator
+DEFAULT_ADMIN_EMAIL=admin@example.com
+DEFAULT_ADMIN_PASSWORD=replace-with-a-strong-password
+MAX_UPLOAD_MB=10
+COOKIE_HTTPS=false
+TESSERACT_CMD=/usr/bin/tesseract
+```
+
+Replace the placeholders with your own database and admin settings. Generate the session secret with `python -c "import secrets; print(secrets.token_urlsafe(48))"`. URL-encode reserved characters in the database password. Docker's `--env-file` passes values literally, so do not add shell-style quotes around values. Keep this file private and never commit or publish it. The image already includes Tesseract at `/usr/bin/tesseract`; do not pass the Windows Tesseract path from your local `.env`.
+
+The database must be reachable from the container. `localhost` inside a container refers to that container, not your host machine. Use your cloud database hostname or an appropriately configured Docker network hostname.
+
+From the directory containing `.env.docker`, run the following in PowerShell or a Linux shell:
 
 ```bash
 docker pull DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
-docker run --env-file .env -p 8000:8000 DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
+docker run -d --name chitfunds-parser --env-file .env.docker -p 127.0.0.1:8000:8000 DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
+docker logs -f chitfunds-parser
 ```
 
-Pull request builds validate Docker build output but do not push or require Docker Hub credentials.
+Open `http://127.0.0.1:8000` after startup completes. Press Ctrl+C to stop following logs; the container continues running. `COOKIE_HTTPS=false` is for local HTTP testing only. For deployment behind HTTPS, use `COOKIE_HTTPS=true`, configure an HTTPS reverse proxy, and change the port binding as needed. Do not expose this application publicly without reviewing its authentication and production security controls.
+
+Useful container commands:
+
+```bash
+docker stop chitfunds-parser
+docker start chitfunds-parser
+docker logs chitfunds-parser
+```
+
+To apply a changed `.env.docker` or deploy a different tag, stop and remove the container, then repeat the `docker run` command:
+
+```bash
+docker stop chitfunds-parser
+docker rm chitfunds-parser
+```
+
+Removing the container does not delete records or screenshots stored in the external database. Back up the database separately. Changing `DEFAULT_ADMIN_PASSWORD` does not reset an existing admin account's password.
 
 ## 7. Operations Checklist
 
