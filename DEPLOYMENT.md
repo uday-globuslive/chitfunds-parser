@@ -139,7 +139,7 @@ Do not expose Uvicorn or Gunicorn directly to the internet without a reverse pro
 
 ## 4. PostgreSQL/TiDB Cloud
 
-The application requires PostgreSQL TLS access.
+Use PostgreSQL TLS for production connections. The application passes the SSL mode in `DATABASE_URL` to the PostgreSQL driver; it does not enable TLS on the database server.
 
 The `DATABASE_URL` format is:
 
@@ -154,6 +154,14 @@ DATABASE_URL=postgresql+psycopg2://your-user:your-password@your-host.gateway.pro
 ```
 
 URL-encode passwords containing reserved characters such as `@`, `/`, `#`, `?`, or `%`. The database does not need to run on PythonAnywhere or the Windows host.
+
+If startup fails with `server does not support SSL, but SSL was required`, enable TLS on PostgreSQL where possible. For a trusted development network with a server that does not support TLS, explicitly use `sslmode=disable` instead:
+
+```dotenv
+DATABASE_URL=postgresql+psycopg2://USERNAME:PASSWORD@HOST:5432/chitfunds?sslmode=disable
+```
+
+This sends database traffic, including credentials, without encryption. Do not use it over untrusted networks. The PostgreSQL service in `docker-compose.yml` does not enable TLS by default; when connecting to it from the `web` service, use `postgres` as the host rather than `localhost`.
 
 On startup, the application:
 
@@ -337,6 +345,8 @@ Pull request builds validate Docker build output but do not push or require Dock
 
 Install and start Docker Desktop on Windows or Docker Engine on Linux. Add `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to the GitHub repository's Actions secrets before pushing a branch. After the workflow succeeds, find the actual image tag in the Actions run or Docker Hub. Replace `DOCKERHUB_USERNAME` and `main-abcdef1` in the commands below with your username and published tag. For a private image, run `docker login` first.
 
+For Ubuntu 24.04 Docker and PostgreSQL container setup, see [Installing Docker & PostgreSQL on Ubuntu 24.04 with pgAdmin Web Interface](https://vbscriptsite.wordpress.com/2026/03/12/installing-docker-postgresql-on-ubuntu-24-04-with-pgadmin-web-interface/).
+
 Create a separate `.env.docker` file on the machine running Docker:
 
 ```dotenv
@@ -354,15 +364,19 @@ Replace the placeholders with your own database and admin settings. Generate the
 
 The database must be reachable from the container. `localhost` inside a container refers to that container, not your host machine. Use your cloud database hostname or an appropriately configured Docker network hostname.
 
+The following command publishes port 8000 on all host interfaces. Restrict access to trusted networks using host and network firewalls; use HTTPS for public access. For host-only access, replace `-p 8000:8000` with `-p 127.0.0.1:8000:8000`.
+
 From the directory containing `.env.docker`, run the following in PowerShell or a Linux shell:
 
 ```bash
 docker pull DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
-docker run -d --name chitfunds-parser --env-file .env.docker -p 127.0.0.1:8000:8000 DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
+docker run -d --name chitfunds-parser --env-file .env.docker -p 8000:8000 DOCKERHUB_USERNAME/chitfunds-parser:main-abcdef1
 docker logs -f chitfunds-parser
 ```
 
-Open `http://127.0.0.1:8000` after startup completes. Press Ctrl+C to stop following logs; the container continues running. `COOKIE_HTTPS=false` is for local HTTP testing only. For deployment behind HTTPS, use `COOKIE_HTTPS=true`, configure an HTTPS reverse proxy, and change the port binding as needed. Do not expose this application publicly without reviewing its authentication and production security controls.
+After startup completes, open `http://127.0.0.1:8000` on the Docker host or `http://DOCKER_HOST_IP:8000` from another machine. Allow TCP port 8000 through the host and network firewalls for the clients that need access. Press Ctrl+C to stop following logs; the container continues running. `COOKIE_HTTPS=false` is for HTTP testing only. For deployment behind HTTPS, use `COOKIE_HTTPS=true`, configure an HTTPS reverse proxy, and change the port binding as needed. Do not expose this application publicly without reviewing its authentication and production security controls.
+
+Use `docker port chitfunds-parser` to check the published address. A mapping to `127.0.0.1:8000` is accessible only from the Docker host. To change the port mapping, recreate the container with the desired `docker run` options; restarting it is not sufficient.
 
 Useful container commands:
 
@@ -378,6 +392,8 @@ To apply a changed `.env.docker` or deploy a different tag, stop and remove the 
 docker stop chitfunds-parser
 docker rm chitfunds-parser
 ```
+
+Restarting an existing container does not reload its environment file. For Docker Compose, update the `.env` used by the `web` service and run `docker compose up -d --force-recreate web`.
 
 Removing the container does not delete records or screenshots stored in the external database. Back up the database separately. Changing `DEFAULT_ADMIN_PASSWORD` does not reset an existing admin account's password.
 
