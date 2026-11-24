@@ -2,8 +2,17 @@
 {% block title %}{{ chit.name }} | Chitfunds Parser{% endblock %}
 {% block content %}
 <section class="page-heading">
-  <div><p class="eyebrow">Chit</p><h1>{{ chit.name }}</h1></div>
-  <a class="button secondary" href="/dashboard">Back</a>
+  <div>
+    <p class="eyebrow">Chit</p>
+    <h1>{{ chit.name }}</h1>
+    <span class="status chit-status {{ chit.status }}">{{ chit.status|replace("_", " ")|title }}</span>
+  </div>
+  <div class="heading-actions">
+    <a class="button secondary" href="/dashboard">Back</a>
+    <form method="post" action="/chits/{{ chit.id }}/delete" onsubmit="return confirm('Delete this chit and all its transactions and uploaded images? This cannot be undone.')">
+      <button class="button danger" type="submit">Delete chit</button>
+    </form>
+  </div>
 </section>
 
 <section class="summary-grid">

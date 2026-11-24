@@ -20,6 +20,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .container { width: min(1180px, calc(100% - 48px)); margin: 32px auto 64px; }
 .auth-shell { width: min(430px, 100%); margin: 10vh auto; padding: 32px; background: var(--panel); border: 1px solid var(--line); }
 .page-heading, .table-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.heading-actions { display: flex; align-items: center; gap: 8px; }
+.heading-actions form { margin: 0; }
 .page-heading h1, .auth-shell h1 { margin: 4px 0 0; font-size: 42px; line-height: 1; }
 h2 { margin: 0 0 16px; font-size: 20px; }
 .eyebrow { margin: 0 0 6px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
@@ -52,6 +54,11 @@ th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
 .status { display: inline-block; padding: 4px 8px; border-radius: 3px; font-size: 12px; }
 .status.verified { color: var(--green); background: #edf4ef; }
 .status.needs_review { color: var(--amber); background: #f6f0dc; }
+.status.active { color: var(--green); background: #edf4ef; }
+.status.completed { color: #35566b; background: #eaf1f5; }
+.status.archived { color: var(--muted); background: #eef0ec; }
+.chit-status { margin-top: 10px; }
+.heading-actions .button.danger { margin-top: 0; }
 .review-grid { display: grid; grid-template-columns: minmax(320px, 1.1fr) minmax(280px, .9fr); gap: 20px; }
 .review-totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
 .review-totals div { display: grid; gap: 5px; padding: 12px; background: #f4f5ef; border: 1px solid var(--line); }

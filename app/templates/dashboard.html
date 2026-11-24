@@ -22,7 +22,7 @@
   {% set chit = card.chit %}
   <article class="card">
     <div>
-      <p class="eyebrow">{{ chit.status }}</p>
+      <span class="status chit-status {{ chit.status }}">{{ chit.status|replace("_", " ")|title }}</span>
       <h2>{{ chit.name }}</h2>
       <p class="amount">Chit amount: ₹{{ "{:,.2f}".format(chit.chit_amount) }}</p>
       <p class="amount">Total chit amount: ₹{{ "{:,.2f}".format(card.total_chit_amount) }}</p>

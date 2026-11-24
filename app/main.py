@@ -334,6 +334,15 @@ def edit_chit(
     return RedirectResponse(f"/chits/{chit_id}", status_code=303)
 
 
+@app.post("/chits/{chit_id}/delete")
+def delete_chit(request: Request, chit_id: str, db: Session = Depends(get_db)):
+    user = require_user(request, db)
+    chit = get_owned_chit(db, chit_id, user)
+    db.delete(chit)
+    db.commit()
+    return RedirectResponse("/dashboard", status_code=303)
+
+
 @app.get("/chits/{chit_id}", response_class=HTMLResponse)
 def chit_detail(request: Request, chit_id: str, db: Session = Depends(get_db)):
     user = require_user(request, db)
